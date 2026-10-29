@@ -1,0 +1,61 @@
+# Astral toolkit (PHP) on Apache 2.4. Every address that is not an existing file
+# goes to index.php. Internal folders never answer. Versioned assets
+# (/assets/fonts/inter-variable.<hash>.woff2) map to the real file and are cached
+# for a year; a changed file gets a new name.
+
+Options -Indexes -MultiViews
+DirectoryIndex index.php
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  # RewriteBase /    (uncomment when the site lives in a subfolder that needs it)
+
+  # Internals: config, cache, code, templates, scripts, tests, docs.
+  RewriteRule (^|/)\.(?!well-known/) - [R=404,L]
+  RewriteRule ^(var|src|templates|bin|tests|vendor)(/|$) - [R=404,L]
+  RewriteRule ^(composer\.(json|lock)|astral\.model\.json|astral\.convert\.md|lighthouserc\.json|[A-Z]+\.md)$ - [R=404,L]
+
+  # Versioned assets: name.<10 hex>.ext is name.ext.
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteRule ^assets/(.+)\.[0-9a-f]{10}\.(css|js|woff2|svg|png|jpe?g|webp|avif|ico)$ assets/$1.$2 [L]
+
+  # Existing files are served as they are; everything else is the site.
+  RewriteCond %{REQUEST_FILENAME} -f
+  RewriteRule ^ - [L]
+  RewriteRule ^ index.php [L]
+</IfModule>
+
+<IfModule mod_mime.c>
+  AddType font/woff2 .woff2
+  AddType image/svg+xml .svg
+  AddType text/javascript .js
+  AddCharset utf-8 .css .js .svg .txt .xml
+</IfModule>
+
+# Compression of text answers (PHP already gzips the HTML it serves; Apache skips
+# what is already encoded). Brotli first when the module exists.
+<IfModule mod_brotli.c>
+  AddOutputFilterByType BROTLI_COMPRESS text/css text/javascript application/javascript application/json application/xml image/svg+xml text/plain
+</IfModule>
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/css text/javascript application/javascript application/json application/xml image/svg+xml text/plain
+</IfModule>
+
+<IfModule mod_headers.c>
+  # Versioned assets: a year, immutable. The request URI still has the hash.
+  <If "%{REQUEST_URI} =~ m#^/(.*/)?assets/.+\.[0-9a-f]{10}\.[a-z0-9]+$#">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </If>
+  <FilesMatch "^favicon\.svg$">
+    Header set Cache-Control "public, max-age=86400"
+  </FilesMatch>
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
+
+# Never serve these even if mod_rewrite is off.
+<FilesMatch "^(\.env.*|composer\.(json|lock)|astral\.model\.json|lighthouserc\.json)$">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+</FilesMatch>

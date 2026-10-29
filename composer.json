@@ -1,0 +1,28 @@
+{
+    "name": "doois/astral-toolkit-php",
+    "description": "Astral (Doois headless CMS) starter site in plain PHP: runs as uploaded, Composer optional.",
+    "type": "project",
+    "license": "proprietary",
+    "require": {
+        "php": ">=8.2",
+        "ext-json": "*",
+        "ext-mbstring": "*"
+    },
+    "suggest": {
+        "ext-curl": "HTTP client for the CMS (streams are used without it)",
+        "ext-zlib": "gzipped HTML",
+        "ext-intl": "dates in any locale"
+    },
+    "autoload": {
+        "psr-4": {
+            "Astral\\": "src/Astral/",
+            "App\\": "src/App/"
+        },
+        "files": ["src/helpers.php"]
+    },
+    "scripts": {
+        "test": "php bin/test.php",
+        "warm": "php bin/warm.php",
+        "check": "php bin/check.php"
+    }
+}

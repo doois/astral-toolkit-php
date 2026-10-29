@@ -1,0 +1,36 @@
+name: Lighthouse
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Runs the tests, then serves the site with PHP's built-in server (index.php as
+# the router, which mimics .htaccess) against the CMS (secrets of the repository),
+# warms the cache and runs Lighthouse CI: performance, accessibility, best
+# practices and SEO must score 95 or more (lighthouserc.json), or the workflow fails.
+jobs:
+  lighthouse:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      ASTRAL_URL: ${{ secrets.ASTRAL_URL }}
+      ASTRAL_PROJECT: ${{ secrets.ASTRAL_PROJECT }}
+      ASTRAL_TOKEN: ${{ secrets.ASTRAL_TOKEN }}
+      SITE_URL: http://127.0.0.1:8080
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2"
+          extensions: curl, mbstring, zlib
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: php bin/test.php
+      - run: php bin/check.php
+      - run: php bin/warm.php --quiet
+      - run: npx --yes @lhci/cli@0.15.1 autorun
+        env:
+          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
