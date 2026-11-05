@@ -114,3 +114,7 @@ toolkit. Never touch: `index.php`, `.htaccess`, `src/Astral/` (the client),
 
 The markup and class names follow `DESIGN.md`, shared with the Astro, Next and
 Nuxt toolkits: a conversion that changes markup keeps the class names stable.
+
+The Content-Security-Policy (`src/App/Csp.php`) allows no inline JavaScript: no
+`<script>` with code, no `onclick`, no third-party origins unless added there.
+Styles may be inline.

@@ -62,11 +62,24 @@ final class Response
         return $this->bodyFile !== null ? (string) @file_get_contents($this->bodyFile) : $this->body;
     }
 
+    /**
+     * The headers as they go out. Every HTML document carries the Content-Security-Policy,
+     * added here so a page cached on disk gets the current policy, and so does the 304
+     * that revalidates a copy the browser kept (304 headers update the stored ones).
+     *
+     * @return array<string, string>
+     */
+    public function finalHeaders(): array
+    {
+        $html = str_starts_with($this->headers['content-type'] ?? '', 'text/html');
+        return $html || $this->status === 304 ? $this->headers + ['content-security-policy' => Csp::policy()] : $this->headers;
+    }
+
     public function send(string $method = 'GET'): void
     {
         if (!headers_sent()) {
             http_response_code($this->status);
-            foreach ($this->headers as $name => $value) {
+            foreach ($this->finalHeaders() as $name => $value) {
                 header(self::canonicalName($name) . ': ' . $value);
             }
             if ($this->bodyFile !== null && !isset($this->headers['content-length'])) {

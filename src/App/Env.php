@@ -90,6 +90,12 @@ final class Env
         return rtrim(self::get('ASTRAL_URL'), '/');
     }
 
+    /** The CMS media host (its MEDIA_URL), when it has one; only the Content-Security-Policy reads it. */
+    public static function mediaUrl(): string
+    {
+        return rtrim(self::get('ASTRAL_MEDIA_URL'), '/');
+    }
+
     public static function project(): string
     {
         return self::get('ASTRAL_PROJECT');

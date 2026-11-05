@@ -16,7 +16,7 @@ revalidação por webhook, status de build e a ilha `live` da lista de posts.
 | `astral.model.json` | O modelo do site (o mesmo dos outros toolkits) |
 | `astral.convert.md` | O mapa do toolkit para a conversão de código do CMS |
 | `src/Astral/` | O cliente do Astral em PHP: `Client`, `Urls`, `Image`, `Webhook`, `RichText`, `Render` e as exceções |
-| `src/App/` | O site: `Kernel` (rotas e modos), `Cms` (leituras com cache), `PageCache`, `FileCache`, `Routes`, `Site`, `View`, `Revalidator`, `Warmer`, `BuildStatus`, `Assets`, `I18n`, `Env` |
+| `src/App/` | O site: `Kernel` (rotas e modos), `Cms` (leituras com cache), `PageCache`, `FileCache`, `Routes`, `Site`, `View`, `Revalidator`, `Warmer`, `BuildStatus`, `Assets`, `I18n`, `Env`, `Csp` |
 | `templates/` | `layouts/base.php`, `partials/` (cabeçalho, rodapé, cartão de post, paginação, ícones), `pages/` (início, página, post, listagem, 404) e `blocks/` (um arquivo por componente do CMS) |
 | `assets/` | `css/` (o CSS do toolkit Astro, arquivo por arquivo), `fonts/`, `js/live-list.js` (a única linha de JavaScript, só em páginas com lista ao vivo), `img/` |
 | `bin/` | `warm.php` (preenche o cache), `check.php` (diagnóstico do servidor), `test.php` (testes) |
@@ -37,6 +37,7 @@ prioridade sobre o arquivo.
 | `ASTRAL_TOKEN` | Chave de leitura (`cms_xxxxxxxx_...`), com `entries:*:read`, `entries:*:preview` e `media.read` |
 | `ASTRAL_WEBHOOK_SECRET` | Segredo do webhook do projeto que aponta para `<site>/astral/revalidate` |
 | `ASTRAL_BUILD_WEBHOOK_ID` | Opcional: id desse webhook, para reportar ao CMS o status de cada recriação do cache |
+| `ASTRAL_MEDIA_URL` | Opcional: host de mídia do CMS (o `MEDIA_URL` dele, como `https://cms-media.doois.com.br`), para a Content-Security-Policy; veja "Segurança" |
 | `SITE_URL` | Endereço público do site (sem ele, vale o endereço de cada pedido) |
 | `ASTRAL_LOCALE_URLS`, `ASTRAL_LOCALE_DOMAINS` | Opcionais: formato das URLs por idioma e domínios, só enquanto o `/schema` não entregar `localeUrls`/`localeDomains` |
 | `ASTRAL_BUILD_LOCALES` | Opcional: só estes idiomas nesta instalação (formato `none`) |
@@ -213,6 +214,30 @@ quando existe; sem ela, os nomes dos meses de `I18n.php`.
 - Lighthouse CI: o workflow roda os testes, sobe o servidor embutido do PHP com os
   segredos do repositório (`ASTRAL_URL`, `ASTRAL_PROJECT`, `ASTRAL_TOKEN`), aquece o
   cache e falha abaixo de 95 em qualquer categoria.
+
+## Segurança: Content-Security-Policy
+
+`src/App/Csp.php` monta a política e `Response` a acrescenta a toda resposta HTML (páginas,
+404, preview, 503) e a todo 304, na hora de enviar. Por isso uma página guardada em
+`var/cache/html` sai com a política atual, sem limpar cache, e a cópia que o navegador
+já tinha é atualizada pelo 304.
+
+```
+default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline';
+img-src 'self' data: <ASTRAL_URL> <ASTRAL_MEDIA_URL ou https:>; font-src 'self';
+connect-src 'self' <ASTRAL_URL>; form-action 'self'; frame-ancestors 'self';
+base-uri 'self'; object-src 'none'
+```
+
+- As imagens vêm do CMS, mas a API não diz qual é o host de mídia. Com `ASTRAL_MEDIA_URL`
+  o `img-src` fica fechado nele; sem ela, aceita qualquer `https:` para não quebrar imagem.
+  Num CMS sem `MEDIA_URL`, repita o valor de `ASTRAL_URL` para fechar. Imagens externas em
+  campos `richtext` (o CMS permite qualquer `src` http/https) só carregam com a variável vazia.
+- Nenhum script inline: o JSON-LD é bloco de dados (o `script-src` não o bloqueia) e a ilha é
+  um arquivo. Um bloco novo com JavaScript vai em `assets/js`, nunca em `<script>` inline ou
+  `onclick`.
+- Vídeos do YouTube ou Vimeo (`frame-src`), `<video>` do CMS (`media-src`) e serviços de
+  terceiros (analytics, mapas) precisam da origem acrescentada em `src/App/Csp.php`.
 
 ## Cliente
 
