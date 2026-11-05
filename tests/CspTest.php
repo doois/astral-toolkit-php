@@ -51,6 +51,21 @@ final class CspTest extends TestCase
         $this->assertContains("img-src 'self' data: https://cms.example.com;", Csp::policy());
     }
 
+    public function testOnlyThePreviewOpensToTheCms(): void
+    {
+        $this->assertContains("script-src 'self' https://cms.example.com;", Csp::policy(true));
+        $this->assertContains("frame-ancestors 'self' https://cms.example.com;", Csp::policy(true));
+        $this->assertContains("script-src 'self';", Csp::policy());
+        $this->assertContains("frame-ancestors 'self';", Csp::policy());
+        $this->assertSame('https://cms.example.com/live-edit.js', Csp::liveEditAgent());
+    }
+
+    public function testAnAnswerKeepsThePolicyItCameWith(): void
+    {
+        $response = Response::html('<p>x</p>', 200, ['content-security-policy' => Csp::policy(true)]);
+        $this->assertSame(Csp::policy(true), $response->finalHeaders()['content-security-policy'] ?? null);
+    }
+
     public function testEveryHtmlAnswerCarriesThePolicyAndOtherTypesDoNot(): void
     {
         $this->assertSame(Csp::policy(), Response::html('<p>x</p>', 404)->finalHeaders()['content-security-policy'] ?? null);

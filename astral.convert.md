@@ -118,3 +118,5 @@ Nuxt toolkits: a conversion that changes markup keeps the class names stable.
 The Content-Security-Policy (`src/App/Csp.php`) allows no inline JavaScript: no
 `<script>` with code, no `onclick`, no third-party origins unless added there.
 Styles may be inline.
+
+Converted sites keep the live edit wiring of the preview: every layout prints `$banner`, which carries the banner and the CMS agent.

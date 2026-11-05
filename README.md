@@ -239,6 +239,23 @@ base-uri 'self'; object-src 'none'
 - Vídeos do YouTube ou Vimeo (`frame-src`), `<video>` do CMS (`media-src`) e serviços de
   terceiros (analytics, mapas) precisam da origem acrescentada em `src/App/Csp.php`.
 
+### Editar no site
+
+O "Editar no site" do CMS abre o rascunho num frame do admin, e um agente dentro da página
+acha os campos pelo valor: os templates não precisam de marcação nem de atributos. Só a
+pré-visualização muda, as páginas publicadas continuam com a política acima:
+
+- O documento carrega `<script src="<origem do ASTRAL_URL>/live-edit.js" defer></script>`.
+  Fora do frame do admin esse script não faz nada. Ele só atende a própria origem, então
+  `ASTRAL_URL` precisa ser o endereço em que o admin abre.
+- A política ganha a origem do CMS em `script-src` e vira `frame-ancestors 'self' <origem do CMS>`.
+  O resto é igual (`src/App/Csp.php`).
+- O `Kernel` entrega o script junto com a faixa de aviso, em `$banner`: um layout convertido só
+  precisa continuar imprimindo `$banner`.
+- O toolkit não envia `X-Frame-Options`. Um proxy na frente não pode enviar esse cabeçalho, nem
+  somar outra `Content-Security-Policy`, nessas respostas: as políticas se somam e a mais fechada vence.
+- `/preview` sempre roda no PHP, nunca sai de `var/cache/html`. Um host que ponha CSP própria no Apache ou no nginx precisa deixar `/preview` de fora.
+
 ## Cliente
 
 `src/Astral/` é o port do cliente JavaScript do CMS (`toolkits/client`), com o mesmo

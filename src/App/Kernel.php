@@ -264,10 +264,10 @@ final class Kernel
 
     // ── The site's own endpoints ────────────────────────────────────────
 
-    /** Draft preview: never cached, never indexed, says it is a draft. */
+    /** Draft preview: never cached, never indexed, says it is a draft. The CMS admin may frame it, and its live edit agent rides on the banner (README). */
     private function preview(Request $request): Response
     {
-        $headers = ['cache-control' => 'private, no-store', 'x-robots-tag' => 'noindex, nofollow'];
+        $headers = ['cache-control' => 'private, no-store', 'x-robots-tag' => 'noindex, nofollow', 'content-security-policy' => Csp::policy(true)];
         $token = $request->query['token'] ?? $request->query['preview'] ?? '';
         $entry = null;
         $problem = '';
@@ -288,7 +288,7 @@ final class Kernel
         }
         $site = $this->site($request);
         $locale = (string) ($entry['locale'] ?? $site->format['defaultLocale']);
-        $banner = '<div class="preview-banner" role="status">' . e(I18n::t($locale, 'draftPreview')) . '</div>';
+        $banner = '<div class="preview-banner" role="status">' . e(I18n::t($locale, 'draftPreview')) . '</div><script src="' . e(Csp::liveEditAgent()) . '" defer></script>';
         $html = (new View($site, $this->cms, '/preview', "{$this->root}/templates"))->render('pages/entry', ['entry' => $entry, 'locale' => $locale, 'preview' => true, 'banner' => $banner]);
         return Response::html($html, 200, $headers);
     }

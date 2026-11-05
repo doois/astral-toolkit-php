@@ -16,7 +16,7 @@
  * @var list<array> $jsonLd schema.org items added to the site's graph
  * @var string $ogType "website" or "article"
  * @var string|null $currentPath the path the menu marks as current
- * @var string $banner HTML after the header (the preview banner)
+ * @var string $banner HTML after the header (the preview banner and the CMS's live edit agent)
  */
 
 $description ??= null;
