@@ -16,7 +16,7 @@ final class Image
     public static function isRaster(array $media): bool
     {
         $mime = (string) ($media['mime'] ?? '');
-        return str_starts_with($mime, 'image/') && $mime !== 'image/svg+xml' && $mime !== 'image/gif';
+        return str_starts_with($mime, 'image/') && $mime !== 'image/svg+xml' && ($mime !== 'image/gif' || !empty($media['optimized']));
     }
 
     /** The CMS URL of one sized WebP variant of an image (`?w=640&f=webp`). */
